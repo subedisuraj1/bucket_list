@@ -1,3 +1,5 @@
+import 'package:bucket_list/addBucketList.dart';
+import 'package:bucket_list/viewItem.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
@@ -11,6 +13,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   List<dynamic> bucketListData = [];
   bool isLoading = false;
+  bool isError = false;
 
   Future<void> getData() async {
     setState(() {
@@ -24,18 +27,12 @@ class _MainScreenState extends State<MainScreen> {
       setState(() {
         bucketListData = response.data;
         isLoading = false;
+        isError = false;
       });
     } catch (e) {
       isLoading = false;
+      isError = true;
       setState(() {});
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Cannot connect to the server! Try after few seconds!"),
-          );
-        },
-      );
     }
   }
 
@@ -46,9 +43,62 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
   }
 
+  Widget errorWidget({required String errorText}) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.warning),
+          Text(errorText),
+          ElevatedButton(onPressed: getData, child: Text("Try Again"))
+        ],
+      ),
+    );
+  }
+
+  Widget listDataWidget() {
+    return ListView.builder(
+      itemCount: bucketListData.length,
+      itemBuilder: (BuildContext context, int index) {
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ListTile(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) {
+                    return ViewItem(
+                      title: bucketListData[index]['item'] ?? "",
+                      image: bucketListData[index]['image'] ?? "",
+                    );
+                  },
+                ),
+              );
+            },
+            leading: CircleAvatar(
+              radius: 25,
+              backgroundImage:
+                  NetworkImage(bucketListData[index]['image'] ?? ""),
+            ),
+            title: Text(bucketListData[index]['item'] ?? ""),
+            trailing: Text(bucketListData[index]['cost'].toString() ?? ""),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return AddBucketList();
+          }));
+        },
+      ),
       appBar: AppBar(
         actions: [
           InkWell(
@@ -62,29 +112,14 @@ class _MainScreenState extends State<MainScreen> {
         title: const Text("Bucket List"),
       ),
       body: RefreshIndicator(
-        child: isLoading
-            ? Center(child: CircularProgressIndicator())
-            : ListView.builder(
-                itemCount: bucketListData.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        radius: 25,
-                        backgroundImage:
-                            NetworkImage(bucketListData[index]['image'] ?? ""),
-                      ),
-                      title: Text(bucketListData[index]['item'] ?? ""),
-                      trailing:
-                          Text(bucketListData[index]['cost'].toString() ?? ""),
-                    ),
-                  );
-                },
-              ),
         onRefresh: () async {
           getData();
         },
+        child: isLoading
+            ? Center(child: CircularProgressIndicator())
+            : isError
+                ? errorWidget(errorText: "Error....")
+                : listDataWidget(),
       ),
     );
   }
