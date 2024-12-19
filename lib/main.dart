@@ -1,4 +1,3 @@
-import 'package:bucket_list/addBucketList.dart';
 import 'package:bucket_list/main_screen.dart';
 import 'package:flutter/material.dart';
 

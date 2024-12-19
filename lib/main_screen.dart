@@ -23,9 +23,12 @@ class _MainScreenState extends State<MainScreen> {
     try {
       Response response = await Dio().get(
           "https://bucketlist-b8539-default-rtdb.asia-southeast1.firebasedatabase.app/bucketlist.json");
-
-      setState(() {
+      if (response.data is List) {
         bucketListData = response.data;
+      } else {
+        bucketListData = [];
+      }
+      setState(() {
         isLoading = false;
         isError = false;
       });
@@ -62,28 +65,36 @@ class _MainScreenState extends State<MainScreen> {
       itemBuilder: (BuildContext context, int index) {
         return Padding(
           padding: const EdgeInsets.all(8.0),
-          child: ListTile(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) {
-                    return ViewItem(
-                      title: bucketListData[index]['item'] ?? "",
-                      image: bucketListData[index]['image'] ?? "",
-                    );
+          child: (bucketListData[index] is Map)
+              ? ListTile(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return ViewItem(
+                            index: index,
+                            title: bucketListData[index]['item'] ?? "",
+                            image: bucketListData[index]['image'] ?? "",
+                          );
+                        },
+                      ),
+                    ).then((value) {
+                      if (value == "refresh") {
+                        getData();
+                      }
+                    });
                   },
-                ),
-              );
-            },
-            leading: CircleAvatar(
-              radius: 25,
-              backgroundImage:
-                  NetworkImage(bucketListData[index]['image'] ?? ""),
-            ),
-            title: Text(bucketListData[index]['item'] ?? ""),
-            trailing: Text(bucketListData[index]['cost'].toString() ?? ""),
-          ),
+                  leading: CircleAvatar(
+                    radius: 25,
+                    backgroundImage:
+                        NetworkImage(bucketListData[index]?['image'] ?? ""),
+                  ),
+                  title: Text(bucketListData[index]?['item'] ?? ""),
+                  trailing:
+                      Text(bucketListData[index]?['cost'].toString() ?? ""),
+                )
+              : SizedBox(),
         );
       },
     );
@@ -118,8 +129,10 @@ class _MainScreenState extends State<MainScreen> {
         child: isLoading
             ? Center(child: CircularProgressIndicator())
             : isError
-                ? errorWidget(errorText: "Error....")
-                : listDataWidget(),
+                ? errorWidget(errorText: "Error conneting....")
+                : bucketListData.length < 1
+                    ? Center(child: Text("No data on bucket list"))
+                    : listDataWidget(),
       ),
     );
   }
