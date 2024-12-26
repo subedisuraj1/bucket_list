@@ -29,8 +29,10 @@ class _ViewItemState extends State<ViewItem> {
 
   Future<void> markAsComplete() async {
     try {
+      Map<String, dynamic> data = {"completed": true};
       Response response = await Dio().patch(
-          "https://bucketlist-b8539-default-rtdb.asia-southeast1.firebasedatabase.app/bucketlist/${widget.index}.json");
+          "https://bucketlist-b8539-default-rtdb.asia-southeast1.firebasedatabase.app/bucketlist/${widget.index}.json",
+          data: data);
       Navigator.pop(context, "refresh");
     } catch (e) {
       print("error");

@@ -60,44 +60,54 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget listDataWidget() {
-    return ListView.builder(
-      itemCount: bucketListData.length,
-      itemBuilder: (BuildContext context, int index) {
-        return Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: (bucketListData[index] is Map)
-              ? ListTile(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) {
-                          return ViewItem(
-                            index: index,
-                            title: bucketListData[index]['item'] ?? "",
-                            image: bucketListData[index]['image'] ?? "",
-                          );
-                        },
-                      ),
-                    ).then((value) {
-                      if (value == "refresh") {
-                        getData();
-                      }
-                    });
-                  },
-                  leading: CircleAvatar(
-                    radius: 25,
-                    backgroundImage:
-                        NetworkImage(bucketListData[index]?['image'] ?? ""),
-                  ),
-                  title: Text(bucketListData[index]?['item'] ?? ""),
-                  trailing:
-                      Text(bucketListData[index]?['cost'].toString() ?? ""),
-                )
-              : SizedBox(),
-        );
-      },
-    );
+    List<dynamic> filteredList = bucketListData
+        .where((element) => !(element?["completed"] ?? false))
+        .toList();
+
+    return filteredList.length < 1
+        ? Center(child: Text("No data on bucket List"))
+        : ListView.builder(
+            itemCount: bucketListData.length,
+            itemBuilder: (BuildContext context, int index) {
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: (bucketListData[index] is Map &&
+                        (!(bucketListData[index]?["completed"] ?? false)))
+                    ? Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: ListTile(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) {
+                                  return ViewItem(
+                                    index: index,
+                                    title: bucketListData[index]['item'] ?? "",
+                                    image: bucketListData[index]['image'] ?? "",
+                                  );
+                                },
+                              ),
+                            ).then((value) {
+                              if (value == "refresh") {
+                                getData();
+                              }
+                            });
+                          },
+                          leading: CircleAvatar(
+                            radius: 25,
+                            backgroundImage: NetworkImage(
+                                bucketListData[index]?['image'] ?? ""),
+                          ),
+                          title: Text(bucketListData[index]?['item'] ?? ""),
+                          trailing: Text(
+                              bucketListData[index]?['cost'].toString() ?? ""),
+                        ),
+                      )
+                    : SizedBox(),
+              );
+            },
+          );
   }
 
   @override
@@ -106,9 +116,17 @@ class _MainScreenState extends State<MainScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(context, MaterialPageRoute(builder: (context) {
-            return AddBucketList();
-          }));
+            return AddBucketList(
+              newIndex: bucketListData.length,
+            );
+          })).then((value) {
+            if (value == "refresh") {
+              getData();
+            }
+          });
         },
+        shape: CircleBorder(),
+        child: Icon(Icons.add),
       ),
       appBar: AppBar(
         actions: [
@@ -130,9 +148,7 @@ class _MainScreenState extends State<MainScreen> {
             ? Center(child: CircularProgressIndicator())
             : isError
                 ? errorWidget(errorText: "Error conneting....")
-                : bucketListData.length < 1
-                    ? Center(child: Text("No data on bucket list"))
-                    : listDataWidget(),
+                : listDataWidget(),
       ),
     );
   }
